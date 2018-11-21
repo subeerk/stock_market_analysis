@@ -11,7 +11,7 @@
 
 # import libraries
 import numpy as np
-import pandas as pdƒ
+import pandas as pd
 from sqlalchemy import create_engine
 from nsepy import get_rbi_ref_history
 from datetime import date
