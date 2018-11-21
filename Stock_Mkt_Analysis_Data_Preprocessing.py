@@ -9,48 +9,52 @@
 # * forex rate (US vs INR)
 # * VIX rates
 
-START_DATE = "2018,1,1"
-END_DATE = "2018,9,1"
-
-
+# import libraries
 import numpy as np
-import pandas as pd
+import pandas as pdƒ
 from sqlalchemy import create_engine
-engine = create_engine('sqlite://', echo=False)
-
+from nsepy import get_rbi_ref_history
 from datetime import date
 from nsepy import get_history
 
+# create a sqlite connection
+engine = create_engine('sqlite://', echo=False)
 
-pnb = get_history(symbol='PNB', start=date(2018,1,1),end=date(2018,9,1))
-sbin = get_history(symbol='SBIN', start=date(2018,1,1),end=date(2018,9,1))
+# collect relevant data
+# date format is YYYY,MM,DD
+sbin = get_history(symbol='SBIN', start=date(2018,11,1),end=date(2018,11,13))
+vix = get_history(symbol='INDIAVIX', start=date(2018,11,1),end=date(2018,11,13),index=True)
+rbi_ref = get_rbi_ref_history(date(2018,11,1),end=date(2018,11,13))
+rbi_ref = rbi_ref['1 USD']
 
-sbin.head()
+url = "https://www.quandl.com/api/v3/datasets/CHRIS/CME_CL1.csv"
+crude_price = pd.read_csv(url, index_col=1, parse_dates=True)
 
+#Get Crude Prices
+url = "https://www.quandl.com/api/v3/datasets/CHRIS/CME_CL1.csv"
+crude_price = pd.read_csv(url, index_col=1, parse_dates=True)
+crude_price = crude_price.drop(['High','Low','Change','Settle','Volume','Previous Day Open Interest'], axis = 1)
+
+# drop unnecessary columns from the SBIN
+sbin = sbin.drop(['Symbol', 'Series', 'Prev Close','Last', 'VWAP', 'Volume', 'Turnover', 'Trades', 'Deliverable Volume', '%Deliverble'], axis = 1)
+# drop unnecssary columns from vix
+vix = vix.drop(['Close'],axis = 1)
+
+# push all the data to SQLlite
 sbin.to_sql('sbin',con=engine)
-pnb.to_sql('pnb',con=engine)
-
-'''
-engine.execute('SELECT * from sbin').fetchall()
-
-[('2018-01-01', 'PNB', 'EQ', 171.4, 172.95, 173.4, 168.9, 169.7, 169.75, 171.31, 7869149, 134803219700000.0, 35893, 1423821, 0.1809),
- ('2018-01-02', 'PNB', 'EQ', 169.75, 170.5, 170.9, 165.4, 166.15, 166.4, 167.26, 13729132, 229638327805000.03, 54266, 3567217, 0.25980000000000003),
-
-'''
-vix = get_history(symbol='INDIAVIX', start=date(2018,1,1),end=date(2018,1,1),index=True)
 vix.to_sql('vix',con=engine)
+rbi_ref.to_sql('rbi_ref',con=engine)
+crude_price.to_sql('crude_price',con=engine)
 
-'''
-vix.head()
+# retrieve data from SQLlite
+sbin = engine.execute('SELECT * from sbin').fetchall()
+vix = engine.execute('SELECT * from vix').fetchall()
+rbi_ref = engine.execute('SELECT * from rbi_ref').fetchall()
+crude_price = engine.execute('SELECT * from crude_price').fetchall()
 
-            Open	High	Low	Close	Previous	Change	%Change
-Date	     						
-            NaN 	NaN 	NaN 	NaN 	NaN 	NaN 	NaN
-2018-01-01	12.67	13.6125	12.545	13.3525	12.67	0.68	0.0539
-'''
-from nsepy import get_rbi_ref_history
-rbi_ref = get_rbi_ref_history(date(2015,1,1), date(2015,1,10))
-rbi_ref['1 USD'].to_sql('curr_rates', con = engine)
-engine.execute('SELECT * from curr_rates').fetchall()
-
-engine.table_names()
+# Split list to dataframe
+sbin = pd.DataFrame(sbin,columns=['Date','Open','High','Low','Close'])
+vix = pd.DataFrame(vix,columns=['Date','Open','High','Low','Previous','Change','%Change'])
+rbi_ref = pd.DataFrame(rbi_ref,columns=['Date','USD'])
+crude_price = pd.DataFrame(crude_price,columns=['Open','Date','Close'])
+crude_price = crude_price.drop(['Open'],axis=1)
