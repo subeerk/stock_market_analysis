@@ -23,9 +23,6 @@ vix = get_history(symbol='INDIAVIX', start=date(2018,11,1),end=date(2018,11,13),
 rbi_ref = get_rbi_ref_history(date(2018,11,1),end=date(2018,11,13))
 rbi_ref = rbi_ref['1 USD']
 
-url = "https://www.quandl.com/api/v3/datasets/CHRIS/CME_CL1.csv"
-crude_price = pd.read_csv(url, index_col=1, parse_dates=True)
-
 #Get Crude Prices from quandl.com
 url = "https://www.quandl.com/api/v3/datasets/CHRIS/CME_CL1.csv"
 crude_price = pd.read_csv(url, index_col=1, parse_dates=True)
