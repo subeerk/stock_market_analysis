@@ -30,21 +30,25 @@ if (int(sys.argv[1]) < 1):
 else:
    # the script is invoked for a valid number of days
    print ("Starting the script now")
+import datetime as DT
+today = DT.date.today()
 
-ts = datetime.now()
-ts = ts.strftime("%d/%m/%Y")
-for_date_parsed = datetime.strptime(ts, "%d/%m/%Y")
-cwd = os.getcwd()
-month = for_date_parsed.strftime("%b").upper()
-year = for_date_parsed.year
-day = "%02d" % for_date_parsed.day
-url = f"https://www.nseindia.com/content/historical/EQUITIES/{year}/{month}/cm{day}{month}{year}bhav.csv.zip"
-file_path = os.path.join(f"cm{day}{month}{year}bhav.csv.zip")
+for i in range(int(sys.argv[1])):
+    working_day = today - DT.timedelta(days=i)
+    ts = working_day.strftime("%d/%m/%Y")
+    for_date_parsed = datetime.strptime(ts, "%d/%m/%Y")
+    cwd = os.getcwd()
+    month = for_date_parsed.strftime("%b").upper()
+    year = for_date_parsed.year
+    day = "%02d" % for_date_parsed.day
+    url = f"https://www.nseindia.com/content/historical/EQUITIES/{year}/{month}/cm{day}{month}{year}bhav.csv.zip"
+    file_path = os.path.join(f"cm{day}{month}{year}bhav.csv.zip")
 
-request_response = requests.get(url)
-downloaded_zipfile = zipfile.ZipFile(io.BytesIO(request_response.content))
-downloaded_zipfile.extractall()
-print (file_path)
-
-file_name = os.path.join(f"cm{day}{month}{year}bhav.csv")
-dataframe = pd.read_csv(file_name)
+    request_response = requests.get(url)
+    try:
+        downloaded_zipfile = zipfile.ZipFile(io.BytesIO(request_response.content))
+        downloaded_zipfile.extractall()
+    except:
+        print("Could not download for the date ",working_day)
+    #file_name = os.path.join(f"cm{day}{month}{year}bhav.csv")
+    #dataframe = pd.read_csv(file_name)
